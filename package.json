@@ -1,7 +1,7 @@
 {
   "name": "unraid-mmm",
   "version": "1.0.0",
-  "description": "[Module description]",
+  "description": "MMM-unRAID is a MagicMirror² module by Henry Walter that displays live system statistics from your unRAID server using its GraphQL API.",
   "main": "unRAID-MMM.js",
   "scripts": {
     "lint": "eslint .",
@@ -10,17 +10,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+[GitHub url].git"
+    "url": "git+github.com/artificialai223/unRAID-MMM.git"
   },
   "keywords": [
     "template"
   ],
-  "author": "[Author]",
+  "author": "artificialai223",
   "license": "MIT",
   "bugs": {
-    "url": "[GitHub url]/issues"
+    "url": "https://github.com/artificialai223/unRAID-MMM/issues"
   },
-  "homepage": "[GitHub url]#readme",
+  "homepage": "https://github.com/artificialai223/unRAID-MMM#readme",
   "devDependencies": {
     "@eslint/js": "^9.10.0",
     "@stylistic/eslint-plugin": "^2.7.2",
