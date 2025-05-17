@@ -1,8 +1,8 @@
 {
-  "name": "mmm-template",
+  "name": "unraid-mmm",
   "version": "1.0.0",
   "description": "[Module description]",
-  "main": "MMM-Template.js",
+  "main": "unRAID-MMM.js",
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

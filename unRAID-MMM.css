@@ -1,0 +1,52 @@
+.unraid-mmm-wrapper {
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 0.5rem;
+    width: 300px;
+    font-family: var(--font-sans);
+}
+
+.unraid-mmm-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--color-highlight);
+    text-align: center;
+}
+
+.unraid-mmm-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.unraid-mmm-row:last-child {
+    border-bottom: none;
+}
+
+.unraid-mmm-label {
+    font-weight: 500;
+    color: var(--color-faded);
+}
+
+.unraid-mmm-value {
+    font-weight: 700;
+    color: var(--color-white);
+    text-align: right;
+}
+
+.unraid-mmm-error {
+    color: var(--color-alert);
+    background: rgba(255, 0, 0, 0.1);
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    text-align: center;
+}
+
+.unraid-mmm-loading {
+    color: var(--color-faded);
+    font-style: italic;
+    text-align: center;
+    padding: 0.5rem;
+}
