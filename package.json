@@ -13,7 +13,9 @@
     "url": "git+github.com/artificialai223/unRAID-MMM.git"
   },
   "keywords": [
-    "template"
+    "utility",
+    "unraid",
+    "monitoring"
   ],
   "author": "artificialai223",
   "license": "MIT",
