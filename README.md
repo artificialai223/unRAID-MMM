@@ -7,6 +7,9 @@ It allows you to create flexible queries, customize formatting (including HTML o
 ---
 
 ## 📦 Installation
+[Unraid Documentation](https://docs.unraid.net/API/how-to-use-the-api/)
+
+Create an API key via the CLI with the appropriate permissions and then install the module:
 
 ```bash
 cd ~/MagicMirror/modules
