@@ -147,7 +147,7 @@ Each query object may include:
   ```js
   `(d) => {
     const arr = Array.isArray(d.disks)? d.disks : [];
-    return \\`\${arr.filter(x=>x.status==='DISK_OK').length} / \${arr.length} online\\`;
+    return \`${arr.filter(x=>x.status==='DISK_OK').length} / ${arr.length} online\`;
   }`
   ```
 
