@@ -13,6 +13,8 @@ cd MMM-unRAID
 npm install
 ```
 
+After installation, get your API Key for your unRAID installation by going to [UnRAID Documentation](https://docs.unraid.net/API/how-to-use-the-api/#enabling-the-graphql-sandbox)
+
 ---
 
 ## 🔧 Configuration
@@ -21,77 +23,82 @@ Add this block to your `config/config.js` under `modules:`:
 
 ```js
 {
-  module: "unRAID-MMM",
-  position: "lower_third",
-  classes: "small bright",
-  config: {
-    title:           "unRAID Array Overview",
-    endpoint:        "https://192.168.1.241",
-    apiKey:          "<YOUR_API_KEY>",
-    allowSelfSigned: true,
-    refreshInterval: 60000,
-    queries: [
-      // Array Health
-      {
-        label:         "Array Health",
-        expr:          "array { disks { status } }",
-        formatter:     `(d) => d.disks.every(x=>x.status==="DISK_OK") ? "HEALTHY" : "DAMAGED"`,
-        formatterHTML: false
-      },
-      // Array Temperature
-      {
-        label:         "Array Temperature",
-        expr:          "array { disks { temp } }",
-        formatter:     `(d) => {
-          const maxT = Math.max(...d.disks.map(x=>x.temp));
-          if (maxT >= 60) return \\`OVERHEATING (\${maxT}°C)\\`;
-          if (maxT >= 50) return \\`HOT (\${maxT}°C)\\`;
-          return \\`NOMINAL (\${maxT}°C)\\`;
+    module: "unRAID-MMM",
+    position: "lower_third",
+    classes: "small bright",
+    config: {
+        title: "unRAID Array Overview",
+        endpoint: "https://unraidip",
+        apiKey: "<YOUR_API_KEY>",
+        allowSelfSigned: true,
+        refreshInterval: 60000,
+        queries: [{
+                label: 'Array Health',
+                showLabel: true,
+                expr: 'array { disks { status } }',
+                formatter: `(data) => {
+          return data.disks.every(d => d.status === 'DISK_OK')
+            ? 'HEALTHY'
+            : 'DAMAGED';
         }`,
-        formatterHTML: false
-      },
-      // Array State
-      {
-        label:         "Array State",
-        expr:          "array { state }",
-        formatter:     `(d) => d.state`,
-        formatterHTML: false
-      },
-      // Capacity Used (auto‑scaled from KiB → MB/GB/TB)
-      {
-        label:         "Capacity Used",
-        expr:          "array { disks { fsFree fsSize } }",
-        formatter:     `(d) => {
-          // raw values in KiB
-          const disks       = d.disks;
-          const totalFreeMB = disks.reduce((s,x)=>s + x.fsFree/1024, 0);
-          const totalSizeMB = disks.reduce((s,x)=>s + x.fsSize/1024, 0);
-          const usedMB      = totalSizeMB - totalFreeMB;
+                formatterHTML: false
+            },
+            // Temperature (no sizing)
+            {
+                label: 'Array Temperature',
+                showLabel: true,
+                expr: 'array { disks { temp } }',
+                formatter: `(data) => {
+          const maxT = Math.max(...data.disks.map(d => d.temp));
+          if (maxT >= 60) return 'OVERHEATING (' + maxT + '°C)';
+          if (maxT >= 50) return 'HOT (' + maxT + '°C)';
+          return 'NOMINAL (' + maxT + '°C)';
+        }`,
+                formatterHTML: false
+            },
+            // State
+            {
+                label: 'Array State',
+                showLabel: true,
+                expr: 'array { state }',
+                formatter: `(data) => data.state`,
+                formatterHTML: false
+            },
+            // Auto-formatted capacity
+            {
+                label: 'Capacity Used',
+                showLabel: true,
+                expr: 'array { disks { fsFree fsSize } }',
+                formatter: `(data) => {
+  const disks = data.disks;
 
-          // pick best unit
-          if (totalSizeMB >= 1024*1024) {
-            return (usedMB/1024/1024).toFixed(1) + " TB";
-          }
-          if (totalSizeMB >= 1024) {
-            return (usedMB/1024).toFixed(1) + " GB";
-          }
-          return usedMB.toFixed(1) + " MB";
-        }`,
-        formatterHTML: false
-      },
-      // Disks Online
-      {
-        label:         "Disks Online",
-        expr:          "array { disks { status } }",
-        formatter:     `(d) => {
-          const arr = Array.isArray(d.disks) ? d.disks : [];
-          const ok  = arr.filter(x=>x.status==="DISK_OK").length;
-          return \\`\${ok} / \${arr.length} disks online\\`;
-        }`,
-        formatterHTML: false
-      }
-    ]
+  // The numbers are in KiB, so convert KiB to MB by dividing by 1024
+  const totalFreeMB = disks.reduce((sum, d) => sum + d.fsFree / 1024, 0);
+  const totalSizeMB = disks.reduce((sum, d) => sum + d.fsSize / 1024, 0);
+  const usedMB = totalSizeMB - totalFreeMB;
+
+  function pickUnit(mb) {
+    if (mb >= 1024 * 1024) {
+      return { unit: 'TB', divisor: 1024 * 1024 };
+    } else if (mb >= 1024) {
+      return { unit: 'GB', divisor: 1024 };
+    } else {
+      return { unit: 'MB', divisor: 1 };
+    }
   }
+
+  const { unit, divisor } = pickUnit(totalSizeMB);
+
+  const usedVal = usedMB / divisor;
+  const totalVal = totalSizeMB / divisor;
+
+  return \`\${usedVal.toFixed(1)} / \${totalVal.toFixed(1)} \${unit}\`;
+}`,
+                formatterHTML: false
+            }
+
+        ]
+    }
 }
 ```
 
