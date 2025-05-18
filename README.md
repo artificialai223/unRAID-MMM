@@ -1,161 +1,163 @@
 # MMM-unRAID
 
-**MMM-unRAID** is a MagicMirror² module by [Henry Walter](https://github.com/artificialai223) that displays live system statistics from your unRAID server using its GraphQL API.
-
-It allows you to create flexible queries, customize formatting (including HTML output), and display disk, array, or system-level statistics right on your MagicMirror interface.
+**MMM-unRAID** is a MagicMirror² module by [Henry Walter](https://github.com/artificialai223) that fetches live statistics from your unRAID server via its GraphQL API. All raw size values (`fsSize`, `fsFree`, and legacy `capacity.disks.*`) are returned in **KiB** (kibibytes). This module helps you display array health, temperature, state, and capacity with flexible, per-query formatting.
 
 ---
 
 ## 📦 Installation
-[Unraid Documentation](https://docs.unraid.net/API/how-to-use-the-api/)
 
-Create an API key via the CLI with the appropriate permissions and then install the module:
-
-```bash
+\`\`\`bash
 cd ~/MagicMirror/modules
 git clone https://github.com/artificialai223/MMM-unRAID.git
 cd MMM-unRAID
 npm install
-```
+\`\`\`
 
 ---
 
 ## 🔧 Configuration
 
-Here's an example entry for your `config/config.js`:
+Add this block to your `config/config.js` under `modules:`:
 
-```js
+\`\`\`js
 {
   module: "unRAID-MMM",
   position: "lower_third",
+  classes: "small bright",
   config: {
-    title: "unRAID Statistics", // Optional overall title
-    endpoint: "https://nas.local",
-    apiKey: "your_api_key_here",
+    title:           "unRAID Array Overview",
+    endpoint:        "https://192.168.1.241",
+    apiKey:          "<YOUR_API_KEY>",
     allowSelfSigned: true,
     refreshInterval: 60000,
     queries: [
+      // Array Health
       {
-        label: "Free Space",
-        showLabel: true,
-        expr: "array { capacity { disks { free } } }",
-        formatter: "(data) => (data.capacity.disks.free / 1024 / 1024).toFixed(2) + ' TB'",
+        label:         "Array Health",
+        expr:          "array { disks { status } }",
+        formatter:     \`(d) => d.disks.every(x=>x.status==="DISK_OK") ? "HEALTHY" : "DAMAGED"\`,
         formatterHTML: false
       },
+      // Array Temperature
       {
-        label: "Disk Usage",
-        showLabel: false,
-        expr: `
-          array {
-            disks {
-              name
-              fsFree
-              fsSize
-              temp
-              status
-            }
+        label:         "Array Temperature",
+        expr:          "array { disks { temp } }",
+        formatter:     \`(d) => {
+          const maxT = Math.max(...d.disks.map(x=>x.temp));
+          if (maxT >= 60) return \\\`OVERHEATING (\${maxT}°C)\\\`;
+          if (maxT >= 50) return \\\`HOT (\${maxT}°C)\\\`;
+          return \\\`NOMINAL (\${maxT}°C)\\\`;
+        }\`,
+        formatterHTML: false
+      },
+      // Array State
+      {
+        label:         "Array State",
+        expr:          "array { state }",
+        formatter:     \`(d) => d.state\`,
+        formatterHTML: false
+      },
+      // Capacity Used (auto‑scaled from KiB → MB/GB/TB)
+      {
+        label:         "Capacity Used",
+        expr:          "array { disks { fsFree fsSize } }",
+        formatter:     \`(d) => {
+          // raw values in KiB
+          const disks       = d.disks;
+          const totalFreeMB = disks.reduce((s,x)=>s + x.fsFree/1024, 0);
+          const totalSizeMB = disks.reduce((s,x)=>s + x.fsSize/1024, 0);
+          const usedMB      = totalSizeMB - totalFreeMB;
+
+          // pick best unit
+          if (totalSizeMB >= 1024*1024) {
+            return (usedMB/1024/1024).toFixed(1) + " TB";
           }
-        `,
-        formatter: `(data) => {
-          let html = '<table class="unraid-mmm-table">';
-          html += '<tr><th>Disk</th><th>Free</th><th>Total</th><th>Temp</th><th>Status</th></tr>';
-          data.disks.forEach(d => {
-            html += '<tr>' +
-              '<td>' + d.name + '</td>' +
-              '<td>' + (d.fsFree / 1024 / 1024).toFixed(1) + ' TB</td>' +
-              '<td>' + (d.fsSize / 1024 / 1024).toFixed(1) + ' TB</td>' +
-              '<td>' + d.temp + '°C</td>' +
-              '<td>' + d.status + '</td>' +
-              '</tr>';
-          });
-          html += '</table>';
-          return html;
-        }`,
-        formatterHTML: true
+          if (totalSizeMB >= 1024) {
+            return (usedMB/1024).toFixed(1) + " GB";
+          }
+          return usedMB.toFixed(1) + " MB";
+        }\`,
+        formatterHTML: false
+      },
+      // Disks Online
+      {
+        label:         "Disks Online",
+        expr:          "array { disks { status } }",
+        formatter:     \`(d) => {
+          const arr = Array.isArray(d.disks) ? d.disks : [];
+          const ok  = arr.filter(x=>x.status==="DISK_OK").length;
+          return \\\`\${ok} / \${arr.length} disks online\\\`;
+        }\`,
+        formatterHTML: false
       }
     ]
   }
 }
-```
+\`\`\`
 
 ---
 
 ## ⚙️ Config Options
 
-| Option              | Type     | Required | Description                                                                 |
-|---------------------|----------|----------|-----------------------------------------------------------------------------|
-| `endpoint`          | string   | ✅       | Base URL of your unRAID server including `https://`                        |
-| `apiKey`            | string   | ✅       | API key from unRAID dashboard settings                                     |
-| `allowSelfSigned`   | boolean  | ❌       | Accept self-signed certs (set to `true` if using local/SSL certs)          |
-| `refreshInterval`   | number   | ❌       | Time in ms between polling updates (default: 60000 = 1 minute)             |
-| `title`             | string   | ❌       | Optional title shown at top of module                                      |
-| `queries`           | array    | ✅       | Array of query config objects (see below)                                  |
+| Option             | Type     | Required | Description                                                                  |
+|--------------------|----------|----------|------------------------------------------------------------------------------|
+| \`endpoint\`         | string   | ✅        | Base URL of your unRAID server (include \`https://\`)                         |
+| \`apiKey\`           | string   | ✅        | Your API key (unRAID Settings → Management Access → API Keys)               |
+| \`allowSelfSigned\`  | boolean  | ❌        | Set to \`true\` if using a self-signed SSL certificate                        |
+| \`refreshInterval\`  | number   | ❌        | Poll interval in ms (default: 60000)                                         |
+| \`queries\`          | array    | ✅        | Array of query objects (see below)                                           |
 
 ---
 
-### 🧩 Query Object Options
+### 🧩 Query Object Fields
 
-Each query defines one rendered section of the module.
+Each query object may include:
 
-| Field            | Type     | Required | Description                                                                 |
-|------------------|----------|----------|-----------------------------------------------------------------------------|
-| `label`          | string   | ✅       | Label shown before the result                                               |
-| `showLabel`      | boolean  | ❌       | Show or hide the label (default: `true`)                                    |
-| `expr`           | string   | ✅       | GraphQL selection set (without `query {}` wrapper)                          |
-| `formatter`      | string   | ✅       | A stringified JavaScript function that returns a string from query data     |
-| `formatterHTML`  | boolean  | ❌       | If `true`, output is treated as raw HTML instead of plain text              |
-
----
-
-## 🛠 Formatter Examples
-
-Convert bytes to GB:
-
-```js
-"(d) => (d.capacity.disks.free / 1024 / 1024).toFixed(1) + ' GB'"
-```
-
-Display as HTML table:
-
-```js
-`(data) => {
-  let html = '<table><tr><th>Disk</th><th>Temp</th></tr>';
-  data.disks.forEach(d => {
-    html += '<tr><td>' + d.name + '</td><td>' + d.temp + '°C</td></tr>';
-  });
-  html += '</table>';
-  return html;
-}`
-```
-
-Hide label, show only custom HTML:
-
-```js
-{
-  label: "Hidden",
-  showLabel: false,
-  formatterHTML: true,
-  expr: "...",
-  formatter: "(data) => '<div>My custom block</div>'"
-}
-```
+| Field           | Type     | Required | Description                                                                                                 |
+|-----------------|----------|----------|-------------------------------------------------------------------------------------------------------------|
+| \`label\`         | string   | ✅        | Prefix text for the output                                                                                  |
+| \`expr\`          | string   | ✅        | GraphQL selection set (no surrounding \`query {}\`)                                                           |
+| \`formatter\`     | string   | ✅        | JavaScript arrow function (as a string) that receives the raw data object and returns a formatted string   |
+| \`formatterHTML\` | boolean  | ❌        | When \`true\`, the returned string is injected via \`innerHTML\` (allows tables/HTML).                          |
 
 ---
 
-## 🧪 Troubleshooting
+## 📋 Formatter Examples
 
-- ❌ Nothing renders?
-  - Check browser dev console (`F12`) → look for `[unRAID-MMM]` logs
-  - Confirm unRAID endpoint and API key
-  - Ensure your queries are valid GraphQL syntax
+- **Sizes in TB (KiB → MiB → GiB → TiB)**  
+  \`\`\`js
+  "(d) => (d.fsFree / 1024 / 1024 / 1024).toFixed(2) + ' TB'"
+  \`\`\`
+- **Sizes in GB (KiB → MiB → GiB)**  
+  \`\`\`js
+  "(d) => (d.fsFree / 1024 / 1024).toFixed(1) + ' GB'"
+  \`\`\`
+- **Explicit conversion (KiB → MB)**  
+  \`\`\`js
+  "(d) => (d.fsFree / 1024).toFixed(1) + ' MB'"
+  \`\`\`
+- **Count online disks**  
+  \`\`\`js
+  \`(d) => {
+    const arr = Array.isArray(d.disks)? d.disks : [];
+    return \\\`\${arr.filter(x=>x.status==='DISK_OK').length} / \${arr.length} online\\\`;
+  }\`
+  \`\`\`
 
-- ❗ GraphQL 400 errors?
-  - Use only the selection set in `expr` (no `query { ... }` wrapper)
+---
+
+## 🛠 Troubleshooting
+
+- **“split of undefined” error**  
+  - Ensure the module block has both \`module: 'unRAID-MMM'\` and \`position: '...'\`.  
+  - Remove any trailing commas or stray braces in your \`config.js\`.  
+- **Formatter errors**  
+  - Confirm the raw value units are KiB and adjust \`/1024\` divisions accordingly.  
+  - Check your arrow‑function syntax; any backtick mismatches will break the parser.
 
 ---
 
 ## 📜 License
 
-MIT License
-
-Made with ❤️ by [Henry Walter](https://github.com/artificialai223)
+MIT License  
+Made with ❤️ by [Henry Walter](https://github.com/artificialai223)  
