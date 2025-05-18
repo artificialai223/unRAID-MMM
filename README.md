@@ -6,12 +6,12 @@
 
 ## 📦 Installation
 
-\`\`\`bash
+```bash
 cd ~/MagicMirror/modules
 git clone https://github.com/artificialai223/MMM-unRAID.git
 cd MMM-unRAID
 npm install
-\`\`\`
+```
 
 ---
 
@@ -19,7 +19,7 @@ npm install
 
 Add this block to your `config/config.js` under `modules:`:
 
-\`\`\`js
+```js
 {
   module: "unRAID-MMM",
   position: "lower_third",
@@ -35,33 +35,33 @@ Add this block to your `config/config.js` under `modules:`:
       {
         label:         "Array Health",
         expr:          "array { disks { status } }",
-        formatter:     \`(d) => d.disks.every(x=>x.status==="DISK_OK") ? "HEALTHY" : "DAMAGED"\`,
+        formatter:     `(d) => d.disks.every(x=>x.status==="DISK_OK") ? "HEALTHY" : "DAMAGED"`,
         formatterHTML: false
       },
       // Array Temperature
       {
         label:         "Array Temperature",
         expr:          "array { disks { temp } }",
-        formatter:     \`(d) => {
+        formatter:     `(d) => {
           const maxT = Math.max(...d.disks.map(x=>x.temp));
-          if (maxT >= 60) return \\\`OVERHEATING (\${maxT}°C)\\\`;
-          if (maxT >= 50) return \\\`HOT (\${maxT}°C)\\\`;
-          return \\\`NOMINAL (\${maxT}°C)\\\`;
-        }\`,
+          if (maxT >= 60) return \\`OVERHEATING (\${maxT}°C)\\`;
+          if (maxT >= 50) return \\`HOT (\${maxT}°C)\\`;
+          return \\`NOMINAL (\${maxT}°C)\\`;
+        }`,
         formatterHTML: false
       },
       // Array State
       {
         label:         "Array State",
         expr:          "array { state }",
-        formatter:     \`(d) => d.state\`,
+        formatter:     `(d) => d.state`,
         formatterHTML: false
       },
       // Capacity Used (auto‑scaled from KiB → MB/GB/TB)
       {
         label:         "Capacity Used",
         expr:          "array { disks { fsFree fsSize } }",
-        formatter:     \`(d) => {
+        formatter:     `(d) => {
           // raw values in KiB
           const disks       = d.disks;
           const totalFreeMB = disks.reduce((s,x)=>s + x.fsFree/1024, 0);
@@ -76,24 +76,24 @@ Add this block to your `config/config.js` under `modules:`:
             return (usedMB/1024).toFixed(1) + " GB";
           }
           return usedMB.toFixed(1) + " MB";
-        }\`,
+        }`,
         formatterHTML: false
       },
       // Disks Online
       {
         label:         "Disks Online",
         expr:          "array { disks { status } }",
-        formatter:     \`(d) => {
+        formatter:     `(d) => {
           const arr = Array.isArray(d.disks) ? d.disks : [];
           const ok  = arr.filter(x=>x.status==="DISK_OK").length;
-          return \\\`\${ok} / \${arr.length} disks online\\\`;
-        }\`,
+          return \\`\${ok} / \${arr.length} disks online\\`;
+        }`,
         formatterHTML: false
       }
     ]
   }
 }
-\`\`\`
+```
 
 ---
 
@@ -101,11 +101,11 @@ Add this block to your `config/config.js` under `modules:`:
 
 | Option             | Type     | Required | Description                                                                  |
 |--------------------|----------|----------|------------------------------------------------------------------------------|
-| \`endpoint\`         | string   | ✅        | Base URL of your unRAID server (include \`https://\`)                         |
-| \`apiKey\`           | string   | ✅        | Your API key (unRAID Settings → Management Access → API Keys)               |
-| \`allowSelfSigned\`  | boolean  | ❌        | Set to \`true\` if using a self-signed SSL certificate                        |
-| \`refreshInterval\`  | number   | ❌        | Poll interval in ms (default: 60000)                                         |
-| \`queries\`          | array    | ✅        | Array of query objects (see below)                                           |
+| `endpoint`         | string   | ✅        | Base URL of your unRAID server (include `https://`)                         |
+| `apiKey`           | string   | ✅        | Your API key (unRAID Settings → Management Access → API Keys)               |
+| `allowSelfSigned`  | boolean  | ❌        | Set to `true` if using a self-signed SSL certificate                        |
+| `refreshInterval`  | number   | ❌        | Poll interval in ms (default: 60000)                                         |
+| `queries`          | array    | ✅        | Array of query objects (see below)                                           |
 
 ---
 
@@ -115,44 +115,44 @@ Each query object may include:
 
 | Field           | Type     | Required | Description                                                                                                 |
 |-----------------|----------|----------|-------------------------------------------------------------------------------------------------------------|
-| \`label\`         | string   | ✅        | Prefix text for the output                                                                                  |
-| \`expr\`          | string   | ✅        | GraphQL selection set (no surrounding \`query {}\`)                                                           |
-| \`formatter\`     | string   | ✅        | JavaScript arrow function (as a string) that receives the raw data object and returns a formatted string   |
-| \`formatterHTML\` | boolean  | ❌        | When \`true\`, the returned string is injected via \`innerHTML\` (allows tables/HTML).                          |
+| `label`         | string   | ✅        | Prefix text for the output                                                                                  |
+| `expr`          | string   | ✅        | GraphQL selection set (no surrounding `query {}`)                                                           |
+| `formatter`     | string   | ✅        | JavaScript arrow function (as a string) that receives the raw data object and returns a formatted string   |
+| `formatterHTML` | boolean  | ❌        | When `true`, the returned string is injected via `innerHTML` (allows tables/HTML).                          |
 
 ---
 
 ## 📋 Formatter Examples
 
 - **Sizes in TB (KiB → MiB → GiB → TiB)**  
-  \`\`\`js
+  ```js
   "(d) => (d.fsFree / 1024 / 1024 / 1024).toFixed(2) + ' TB'"
-  \`\`\`
+  ```
 - **Sizes in GB (KiB → MiB → GiB)**  
-  \`\`\`js
+  ```js
   "(d) => (d.fsFree / 1024 / 1024).toFixed(1) + ' GB'"
-  \`\`\`
+  ```
 - **Explicit conversion (KiB → MB)**  
-  \`\`\`js
+  ```js
   "(d) => (d.fsFree / 1024).toFixed(1) + ' MB'"
-  \`\`\`
+  ```
 - **Count online disks**  
-  \`\`\`js
-  \`(d) => {
+  ```js
+  `(d) => {
     const arr = Array.isArray(d.disks)? d.disks : [];
-    return \\\`\${arr.filter(x=>x.status==='DISK_OK').length} / \${arr.length} online\\\`;
-  }\`
-  \`\`\`
+    return \\`\${arr.filter(x=>x.status==='DISK_OK').length} / \${arr.length} online\\`;
+  }`
+  ```
 
 ---
 
 ## 🛠 Troubleshooting
 
 - **“split of undefined” error**  
-  - Ensure the module block has both \`module: 'unRAID-MMM'\` and \`position: '...'\`.  
-  - Remove any trailing commas or stray braces in your \`config.js\`.  
+  - Ensure the module block has both `module: 'unRAID-MMM'` and `position: '...'`.  
+  - Remove any trailing commas or stray braces in your `config.js`.  
 - **Formatter errors**  
-  - Confirm the raw value units are KiB and adjust \`/1024\` divisions accordingly.  
+  - Confirm the raw value units are KiB and adjust `/1024` divisions accordingly.  
   - Check your arrow‑function syntax; any backtick mismatches will break the parser.
 
 ---
